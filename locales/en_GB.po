@@ -1,0 +1,46 @@
+# HelpXora English Translation
+msgid ""
+msgstr ""
+"Project-Id-Version: HelpXora 1.0.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-01 00:00+0000\n"
+"PO-Revision-Date: 2025-01-01 00:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: English\n"
+"Language: en_GB\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "HelpXora"
+msgstr "HelpXora"
+
+msgid "Configuración de HelpXora"
+msgstr "HelpXora Configuration"
+
+msgid "Configuraciones de HelpXora"
+msgstr "HelpXora Configurations"
+
+msgid "General"
+msgstr "General"
+
+msgid "Consulta"
+msgstr "Query"
+
+msgid "Consultas"
+msgstr "Queries"
+
+msgid "Requerimiento"
+msgstr "Requirement"
+
+msgid "Requerimientos"
+msgstr "Requirements"
+
+msgid "Histórico de acciones"
+msgstr "Action history"
+
+msgid "Invalid or inactive requirement. Please choose again from the menu."
+msgstr "Invalid or inactive requirement. Please choose again from the menu."
+
+msgid "File could not be attached due to system restrictions."
+msgstr "File could not be attached due to system restrictions."

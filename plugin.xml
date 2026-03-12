@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+    <name>HelpXora</name>
+    <key>helpxora</key>
+    <state>stable</state>
+    <logo>https://github.com/nexora-innova/helpxora/raw/main/pics/logo.png</logo>
+    <description>
+        <short>
+            <en>Virtual assistant and helpdesk chatbot for GLPI</en>
+            <es>Asistente virtual y chatbot de mesa de ayuda para GLPI</es>
+        </short>
+        <long>
+            <en>HelpXora adds a chat widget to GLPI for helpdesk. Users can browse FAQ-style consultations, create tickets (requerimientos) with attachments, and get a configurable welcome and closing experience. Administrators configure queries, requirement templates, colors, and messages.</en>
+            <es>HelpXora añade un widget de chat en GLPI para mesa de ayuda. Los usuarios pueden consultar respuestas frecuentes, crear tickets (requerimientos) con adjuntos y usar un asistente configurable. Los administradores configuran consultas, plantillas de requerimientos, colores y mensajes.</es>
+        </long>
+    </description>
+    <homepage>https://github.com/nexora-innova/helpxora</homepage>
+    <download>https://github.com/nexora-innova/helpxora/releases</download>
+    <issues>https://github.com/nexora-innova/helpxora/issues</issues>
+    <readme>https://github.com/nexora-innova/helpxora/blob/main/README.md</readme>
+    <authors>
+        <author>NexoraInnova</author>
+    </authors>
+    <versions>
+        <version>
+            <num>1.0.0</num>
+            <compatibility>~10.0</compatibility>
+            <download_url>https://github.com/nexora-innova/helpxora/releases/download/1.0.0/helpxora-1.0.0.tar.gz</download_url>
+        </version>
+    </versions>
+    <langs>
+        <lang>en_GB</lang>
+        <lang>es_ES</lang>
+    </langs>
+    <license>GPL v3</license>
+    <tags>
+        <en>
+            <tag>helpdesk</tag>
+            <tag>chatbot</tag>
+            <tag>assistant</tag>
+            <tag>FAQ</tag>
+            <tag>tickets</tag>
+        </en>
+        <es>
+            <tag>mesa de ayuda</tag>
+            <tag>chatbot</tag>
+            <tag>asistente</tag>
+            <tag>FAQ</tag>
+            <tag>tickets</tag>
+        </es>
+    </tags>
+    <screenshots></screenshots>
+</root>

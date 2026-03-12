@@ -1,0 +1,30 @@
+{
+    "name": "nexora-innova/glpi-helpxora",
+    "description": "HelpXora - Virtual assistant and helpdesk chatbot for GLPI",
+    "type": "glpi-plugin",
+    "keywords": [
+        "GLPI",
+        "plugins",
+        "helpdesk",
+        "chatbot",
+        "assistant",
+        "FAQ",
+        "tickets"
+    ],
+    "homepage": "https://github.com/nexora-innova/helpxora",
+    "license": "GPL-3.0-or-later",
+    "authors": [
+        {
+            "name": "NexoraInnova",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": ">=8.1"
+    },
+    "config": {
+        "platform": {
+            "php": "8.1"
+        }
+    }
+}

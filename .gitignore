@@ -1,0 +1,30 @@
+# Configuración local (no publicar)
+/config/helpxora/
+.env
+.env.local
+*.log
+
+# IDE / editor
+.idea/
+.vscode/
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dependencias
+node_modules/
+vendor/
+
+# Build / cache
+*.cache
+/dist/
+
+# Tests y desarrollo (no incluir en release)
+test_*.php
+ANALISIS_*.md
+migrate_schema.php
+
+# Subidas de imágenes del plugin (opcional: descomentar si no versionar)
+# /pics/uploads/
