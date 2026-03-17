@@ -26,5 +26,5 @@ test_*.php
 ANALISIS_*.md
 migrate_schema.php
 
-# Subidas de imágenes del plugin (opcional: descomentar si no versionar)
-# /pics/uploads/
+# Subidas de imágenes del plugin (no publicar en release)
+pics/uploads/

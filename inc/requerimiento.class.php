@@ -122,6 +122,10 @@ class PluginHelpxoraRequerimiento extends CommonDBTM
       function loadReqModal(id) {
           var \$modal = $('#" . $modal_id . "');
           var \$body = \$modal.find('.modal-body');
+          var _editorId = 'helpxora_req_custom_response_modal';
+          if (typeof tinymce !== 'undefined' && tinymce.get(_editorId)) {
+              tinymce.get(_editorId).remove();
+          }
           $('#" . $modal_id . "Label').text(id > 0 ? 'Editar Requerimiento' : 'Añadir un Requerimiento');
           \$body.html('<div class=\"center\"><span class=\"spinner-border\"></span> Cargando...</div>');
           $.get('" . $form_url . "?_ajax_modal=1&id=' + id, function(data) {

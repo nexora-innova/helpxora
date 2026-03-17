@@ -107,6 +107,10 @@ class PluginHelpxoraConsulta extends CommonDBTM
       echo "<script>
       function loadConsultaModal(id) {
           var \$body = $('#" . $modal_id . " .modal-body');
+          var _editorId = 'helpxora_consulta_answer_modal';
+          if (typeof tinymce !== 'undefined' && tinymce.get(_editorId)) {
+              tinymce.get(_editorId).remove();
+          }
           $('#" . $modal_id . "Label').text(id > 0 ? 'Editar Consulta' : 'Añadir una Consulta');
           \$body.html('<div class=\"center\"><span class=\"spinner-border\"></span> Cargando...</div>');
           $.get('" . $form_url . "?_ajax_modal=1&id=' + id, function(data) {

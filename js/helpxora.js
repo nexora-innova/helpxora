@@ -75,6 +75,11 @@ function openChat() {
     document.getElementById('glpi-helpxora-window').style.display = 'flex';
     document.getElementById('glpi-helpxora-button').style.display = 'none';
 
+    // #region agent log
+    const _inputAreaOnOpen = document.getElementById('glpi-helpxora-input-area');
+    fetch('http://127.0.0.1:7616/ingest/ef63590d-fcdf-482f-b5f5-abe23290346f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ea21bd'},body:JSON.stringify({sessionId:'ea21bd',runId:'run1',hypothesisId:'H-A H-B',location:'helpxora.js:openChat',message:'openChat called',data:{isChatOpen:isChatOpen,currentFlow:currentFlow,inputAreaDisplay:_inputAreaOnOpen?_inputAreaOnOpen.style.display:'NOT FOUND'},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+
     if (!isChatOpen) {
         isChatOpen = true;
         document.getElementById('glpi-helpxora-messages').innerHTML = '';
@@ -86,6 +91,9 @@ function openChat() {
 }
 
 function resetFlow() {
+    // #region agent log
+    fetch('http://127.0.0.1:7616/ingest/ef63590d-fcdf-482f-b5f5-abe23290346f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ea21bd'},body:JSON.stringify({sessionId:'ea21bd',runId:'run1',hypothesisId:'H-C',location:'helpxora.js:resetFlow',message:'resetFlow called',data:{isChatOpen:isChatOpen,currentFlow:currentFlow,stack:(new Error()).stack.split('\n').slice(1,4).join(' | ')},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     const inputArea = document.getElementById('glpi-helpxora-input-area');
     if (inputArea) inputArea.style.display = 'none';
     const preview = document.getElementById('glpi-helpxora-file-preview');
@@ -96,6 +104,10 @@ function resetFlow() {
 }
 
 function closeChat() {
+    // #region agent log
+    const _inputAreaOnClose = document.getElementById('glpi-helpxora-input-area');
+    fetch('http://127.0.0.1:7616/ingest/ef63590d-fcdf-482f-b5f5-abe23290346f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ea21bd'},body:JSON.stringify({sessionId:'ea21bd',runId:'run1',hypothesisId:'H-A H-B H-C',location:'helpxora.js:closeChat',message:'closeChat called',data:{isChatOpen:isChatOpen,currentFlow:currentFlow,currentData:JSON.stringify(currentData),inputAreaDisplay:_inputAreaOnClose?_inputAreaOnClose.style.display:'NOT FOUND'},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     document.getElementById('glpi-helpxora-window').style.display = 'none';
     document.getElementById('glpi-helpxora-button').style.display = 'flex';
     isChatOpen = false;
@@ -240,6 +252,9 @@ function showRequerimientos() {
 
                 const inputArea = document.getElementById('glpi-helpxora-input-area');
                 inputArea.style.display = 'block';
+                // #region agent log
+                fetch('http://127.0.0.1:7616/ingest/ef63590d-fcdf-482f-b5f5-abe23290346f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ea21bd'},body:JSON.stringify({sessionId:'ea21bd',runId:'run1',hypothesisId:'H-A H-D',location:'helpxora.js:showRequerimientos',message:'inputArea set to block by showRequerimientos',data:{req_id:selected.id,currentFlow:currentFlow},timestamp:Date.now()})}).catch(()=>{});
+                // #endregion
 
                 const preview = document.getElementById('glpi-helpxora-file-preview');
                 if (preview) { preview.textContent = ''; preview.style.display = 'none'; }
