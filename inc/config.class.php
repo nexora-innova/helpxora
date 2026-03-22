@@ -34,30 +34,20 @@ class PluginHelpxoraConfig extends CommonDBTM
 
    public function getTabNameForItem(CommonGLPI $item, $withtemplate = 0)
    {
-      if ($item->getType() == __CLASS__) {
-         $ong = [];
-         $ong[1] = __('General', 'helpxora');
-         return $ong;
-      }
       return '';
    }
 
    public static function displayTabContentForItem(CommonGLPI $item, $tabnum = 1, $withtemplate = 0)
    {
-      if ($item->getType() == __CLASS__) {
-         switch ($tabnum) {
-            case 1:
-               $item->showForm(1);
-               break;
-         }
-      }
-      return true;
+      return false;
    }
 
    function showForm($ID, $options = [])
    {
       $this->initForm($ID, $options);
       $this->showFormHeader($options);
+
+      $r = mt_rand();
 
       echo "<tr class='tab_bg_1'><th colspan='4'>Configuración General del Asistente</th></tr>";
 
@@ -78,34 +68,39 @@ class PluginHelpxoraConfig extends CommonDBTM
       echo "<tr class='tab_bg_1'>";
       echo "<td>Mensaje de bienvenida</td>";
       echo "<td colspan='3'>";
-      Html::textarea(['name' => 'welcome_message', 'value' => $this->fields['welcome_message'] ?? '', 'enable_richtext' => true, 'editor_id' => 'helpxora_welcome_message']);
+      Html::textarea(['name' => 'welcome_message', 'value' => $this->fields['welcome_message'] ?? '', 'enable_richtext' => true, 'editor_id' => 'helpxora_welcome_message_' . $r]);
       echo "</td>";
       echo "</tr>";
 
       echo "<tr class='tab_bg_1'>";
       echo "<td>Mensaje de introducción</td>";
       echo "<td colspan='3'>";
-      Html::textarea(['name' => 'intro_message', 'value' => $this->fields['intro_message'] ?? '', 'enable_richtext' => true, 'editor_id' => 'helpxora_intro_message']);
+      Html::textarea(['name' => 'intro_message', 'value' => $this->fields['intro_message'] ?? '', 'enable_richtext' => true, 'editor_id' => 'helpxora_intro_message_' . $r]);
       echo "</td>";
       echo "</tr>";
 
       echo "<tr class='tab_bg_1'>";
       echo "<td>Mensaje de motivo de requerimiento</td>";
       echo "<td colspan='3'>";
-      Html::textarea(['name' => 'reason_message', 'value' => $this->fields['reason_message'] ?? '', 'enable_richtext' => true, 'editor_id' => 'helpxora_reason_message']);
+      Html::textarea(['name' => 'reason_message', 'value' => $this->fields['reason_message'] ?? '', 'enable_richtext' => true, 'editor_id' => 'helpxora_reason_message_' . $r]);
       echo "</td>";
       echo "</tr>";
 
       echo "<tr class='tab_bg_1'>";
       echo "<td>Mensaje de cierre</td>";
       echo "<td colspan='3'>";
-      Html::textarea(['name' => 'close_message', 'value' => $this->fields['close_message'] ?? '', 'enable_richtext' => true, 'editor_id' => 'helpxora_close_message']);
+      Html::textarea(['name' => 'close_message', 'value' => $this->fields['close_message'] ?? '', 'enable_richtext' => true, 'editor_id' => 'helpxora_close_message_' . $r]);
       echo "</td>";
       echo "</tr>";
 
       echo "<tr class='tab_bg_1'>";
       echo "<td>Mensaje de error (Carga de archivos)</td>";
       echo "<td colspan='3'><input type='text' name='upload_error_message' value='" . Html::cleanInputText($this->fields['upload_error_message'] ?? '') . "' size='80'></td>";
+      echo "</tr>";
+
+      echo "<tr class='tab_bg_1'>";
+      echo "<td>Mensaje de error (Texto sin sentido)</td>";
+      echo "<td colspan='3'><input type='text' name='gibberish_error_message' value='" . Html::cleanInputText($this->fields['gibberish_error_message'] ?? '') . "' size='80'></td>";
       echo "</tr>";
 
       echo "<tr class='tab_bg_1'>";

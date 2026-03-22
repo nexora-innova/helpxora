@@ -6,7 +6,6 @@ if (!defined('GLPI_ROOT')) {
 
 class PluginHelpxoraChat extends CommonGLPI
 {
-
    static function getMenuName()
    {
       return "";
@@ -42,9 +41,10 @@ class PluginHelpxoraChat extends CommonGLPI
          'ORDER' => 'question ASC'
       ]);
       foreach ($iterator as $row) {
+         $q = (string)($row['question'] ?? '');
          $consultas[] = [
-            'id' => $row['id'],
-            'text' => $row['question']
+            'id'   => $row['id'],
+            'text' => html_entity_decode(strip_tags($q), ENT_QUOTES, 'UTF-8'),
          ];
       }
       return $consultas;
@@ -78,21 +78,84 @@ class PluginHelpxoraChat extends CommonGLPI
    {
       global $DB;
       $reqs = [];
+      $table = 'glpi_plugin_helpxora_requerimientos';
+      $select = ['id', 'question', 'type', 'custom_response'];
+      $optionalFields = [
+         'attachments_mode', 'max_files', 'allowed_extensions', 'min_chars', 'max_chars',
+         'validation_regex', 'restrict_gibberish', 'description_mode',
+      ];
+      foreach ($optionalFields as $field) {
+         if ($DB->fieldExists($table, $field)) {
+            $select[] = $field;
+         }
+      }
       $iterator = $DB->request([
-         'SELECT' => ['id', 'question', 'type', 'custom_response'],
-         'FROM' => 'glpi_plugin_helpxora_requerimientos',
+         'SELECT' => $select,
+         'FROM' => $table,
          'WHERE' => ['is_active' => 1],
          'ORDER' => 'question ASC'
       ]);
       foreach ($iterator as $row) {
+         $am = (int)($row['attachments_mode'] ?? 0);
+         $dm = (int)($row['description_mode'] ?? 1);
+         if ($am === 0 && $dm === 0) {
+            continue;
+         }
          $reqs[] = [
             'id' => $row['id'],
             'text' => $row['question'],
             'type' => $row['type'],
-            'custom_response' => html_entity_decode($row['custom_response'] ?? '', ENT_QUOTES, 'UTF-8')
+            'custom_response' => html_entity_decode($row['custom_response'] ?? '', ENT_QUOTES, 'UTF-8'),
+            'attachments_mode' => $am,
+            'max_files' => max(1, (int)($row['max_files'] ?? 1)),
+            'allowed_extensions' => (string)($row['allowed_extensions'] ?? ''),
+            'min_chars' => (int)($row['min_chars'] ?? 10),
+            'max_chars' => max(1, (int)($row['max_chars'] ?? 500)),
+            'validation_regex' => (string)($row['validation_regex'] ?? ''),
+            'restrict_gibberish' => (int)($row['restrict_gibberish'] ?? 0),
+            'description_mode' => $dm,
          ];
       }
       return $reqs;
+   }
+
+   public static function preTicketAddValidate(CommonDBTM $item)
+   {
+      if (!($item instanceof Ticket)) {
+         return;
+      }
+      $req_id = (int)($item->input['_helpxora_req_id'] ?? 0);
+      unset($item->input['_helpxora_req_id']);
+      if ($req_id <= 0) {
+         return;
+      }
+
+      global $DB;
+      $iterator = $DB->request([
+         'FROM' => 'glpi_plugin_helpxora_requerimientos',
+         'WHERE' => [
+            'id'        => $req_id,
+            'is_active' => 1
+         ]
+      ]);
+      $req = $iterator->current();
+      if (!$req) {
+         $item->input = false;
+         Session::addMessageAfterRedirect(__('Invalid or inactive requirement. Please choose again from the menu.', 'helpxora'), false, ERROR);
+         return;
+      }
+
+      $content = strip_tags(html_entity_decode((string)($item->input['content'] ?? ''), ENT_QUOTES, 'UTF-8'));
+      $ctx = [];
+      $code = PluginHelpxoraRequirementValidator::validateTicketAgainstRequirement($req, $content, $ctx);
+      if ($code !== null) {
+         PluginHelpxoraRequirementValidator::abortTicketAddWithCode($item, $code, $ctx);
+         return;
+      }
+      $nr = PluginHelpxoraRequirementValidator::normalizeRequirementRow($req);
+      if ($nr['description_mode'] === PluginHelpxoraRequirementValidator::DESCRIPTION_NONE) {
+         $item->input['content'] = '';
+      }
    }
 
    public static function createTicket($data)
@@ -103,7 +166,10 @@ class PluginHelpxoraChat extends CommonGLPI
 
       global $DB;
       $req_id = (int)($data['req_id'] ?? 0);
-      $description = $data['description'] ?? '';
+      $description = trim((string)($data['description'] ?? ''));
+      if ($req_id <= 0) {
+         return ['error' => true, 'message' => 'invalid_requirement'];
+      }
 
       $iterator = $DB->request([
          'FROM' => 'glpi_plugin_helpxora_requerimientos',
@@ -117,43 +183,30 @@ class PluginHelpxoraChat extends CommonGLPI
          return ['error' => true, 'message' => 'invalid_requirement'];
       }
 
-      if (isset($_FILES['file']) && !empty($_FILES['file']['name'])) {
-         $filename = $_FILES['file']['name'];
-         $tmp_name = $_FILES['file']['tmp_name'];
-         $filesize = (int)($_FILES['file']['size'] ?? 0);
+      $ctx = [];
+      $code = PluginHelpxoraRequirementValidator::validateTicketAgainstRequirement($req, $description, $ctx);
+      if ($code !== null) {
+         return ['error' => true, 'message' => $code, 'context' => $ctx];
+      }
 
-         $val = trim(ini_get('upload_max_filesize'));
-         $last = strtolower($val[strlen($val) - 1] ?? '');
-         $max_size = (int)$val;
-         switch ($last) {
-            case 'g':
-               $max_size *= 1024;
-            case 'm':
-               $max_size *= 1024;
-            case 'k':
-               $max_size *= 1024;
-         }
-
-         if ($filesize > $max_size) {
-            return ['error' => true, 'message' => 'too_large'];
-         }
-
-         if (empty(Document::isValidDoc($filename))) {
-            return ['error' => true, 'message' => 'invalid_type'];
-         }
+      $nr = PluginHelpxoraRequirementValidator::normalizeRequirementRow($req);
+      $ticket_body = $description;
+      if ($nr['description_mode'] === PluginHelpxoraRequirementValidator::DESCRIPTION_NONE) {
+         $ticket_body = '';
       }
 
       $ticket = new Ticket();
       $input = [
          'name' => html_entity_decode(strip_tags($req['question']), ENT_QUOTES, 'UTF-8'),
-         'content' => html_entity_decode(strip_tags($description), ENT_QUOTES, 'UTF-8'),
+         'content' => html_entity_decode(strip_tags($ticket_body), ENT_QUOTES, 'UTF-8'),
          'type' => (int)$req['type'],
          'itilcategories_id' => (int)$req['itilcategories_id'],
          'requesttypes_id' => (int)$req['requesttypes_id'],
          '_groups_id_assign' => (int)$req['groups_id'],
          '_users_id_requester' => Session::getLoginUserID(),
          'locations_id' => (int)($_SESSION['glpilocation_id'] ?? 0),
-         'entities_id' => (int)($_SESSION['glpiactive_entity'] ?? 0)
+         'entities_id' => (int)($_SESSION['glpiactive_entity'] ?? 0),
+         '_helpxora_req_id' => $req_id,
       ];
 
       $tickets_id = $ticket->add($input);
@@ -161,13 +214,14 @@ class PluginHelpxoraChat extends CommonGLPI
          return false;
       }
 
-      if (isset($_FILES['file']) && !empty($_FILES['file']['name'])) {
-         $filename = $_FILES['file']['name'];
-         $tmp_name = $_FILES['file']['tmp_name'];
+      $files = PluginHelpxoraRequirementValidator::collectUploadedFilesFromRequest();
+      foreach ($files as $f) {
+         $filename = $f['name'];
+         $tmp_name = $f['tmp_name'];
          $uniqid = uniqid('chat_') . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $filename);
          $dest = GLPI_TMP_DIR . '/' . $uniqid;
 
-         if (move_uploaded_file($tmp_name, $dest)) {
+         if ($tmp_name !== '' && is_uploaded_file($tmp_name) && move_uploaded_file($tmp_name, $dest)) {
             $doc = new Document();
             $docinput = [
                'name' => $filename,

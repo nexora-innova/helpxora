@@ -33,6 +33,33 @@ class PluginHelpxoraRequerimiento extends CommonDBTM
       return Session::haveRight(self::$rightname, PURGE);
    }
 
+   function prepareInputForAdd($input)
+   {
+      return $this->prepareInputForUpdate($input);
+   }
+
+   function prepareInputForUpdate($input)
+   {
+      if (!is_array($input)) {
+         return $input;
+      }
+      if (array_key_exists('attachments_mode', $input)) {
+         $v = (int)$input['attachments_mode'];
+         if ($v < 0 || $v > 2) {
+            $v = PluginHelpxoraRequirementValidator::ATTACHMENTS_NONE;
+         }
+         $input['attachments_mode'] = $v;
+      }
+      if (array_key_exists('description_mode', $input)) {
+         $v = (int)$input['description_mode'];
+         if ($v < 0 || $v > 2) {
+            $v = PluginHelpxoraRequirementValidator::DESCRIPTION_MANDATORY;
+         }
+         $input['description_mode'] = $v;
+      }
+      return $input;
+   }
+
    public function getTabNameForItem(CommonGLPI $item, $withtemplate = 0)
    {
       if ($item->getType() == PluginHelpxoraConfig::class) {
@@ -230,6 +257,75 @@ class PluginHelpxoraRequerimiento extends CommonDBTM
       echo "</td>";
       echo "</tr>";
 
+      echo "<tr class='tab_bg_1'><th colspan='2'>Validaciones y Control de Entrada</th></tr>";
+
+      $attachments_mode_labels = [
+         (string)PluginHelpxoraRequirementValidator::ATTACHMENTS_NONE      => __('Attachments: none', 'helpxora'),
+         (string)PluginHelpxoraRequirementValidator::ATTACHMENTS_MANDATORY => __('Attachments: required (exactly the maximum)', 'helpxora'),
+         (string)PluginHelpxoraRequirementValidator::ATTACHMENTS_OPTIONAL  => __('Attachments: optional (up to the maximum)', 'helpxora'),
+      ];
+      $description_mode_labels = [
+         (string)PluginHelpxoraRequirementValidator::DESCRIPTION_NONE      => __('Description: none (no text field)', 'helpxora'),
+         (string)PluginHelpxoraRequirementValidator::DESCRIPTION_MANDATORY => __('Description: required', 'helpxora'),
+         (string)PluginHelpxoraRequirementValidator::DESCRIPTION_OPTIONAL  => __('Description: optional', 'helpxora'),
+      ];
+      $am_val = (int)($this->fields['attachments_mode'] ?? PluginHelpxoraRequirementValidator::ATTACHMENTS_NONE);
+      if ($am_val < 0 || $am_val > 2) {
+         $am_val = PluginHelpxoraRequirementValidator::ATTACHMENTS_NONE;
+      }
+      $dm_val = (int)($this->fields['description_mode'] ?? PluginHelpxoraRequirementValidator::DESCRIPTION_MANDATORY);
+      if ($dm_val < 0 || $dm_val > 2) {
+         $dm_val = PluginHelpxoraRequirementValidator::DESCRIPTION_MANDATORY;
+      }
+
+      echo "<tr class='tab_bg_1'>";
+      echo "<td>" . __('Attachments policy', 'helpxora') . "</td>";
+      echo "<td>";
+      Dropdown::showFromArray('attachments_mode', $attachments_mode_labels, ['value' => $am_val]);
+      echo "</td>";
+      echo "</tr>";
+
+      echo "<tr class='tab_bg_1 helpxora-req-row-attachments'>";
+      echo "<td>" . __('Maximum number of attachments', 'helpxora') . "</td>";
+      echo "<td>";
+      Dropdown::showNumber('max_files', ['value' => $this->fields['max_files'] ?? 1, 'min' => 1, 'max' => 10]);
+      echo "</td>";
+      echo "</tr>";
+
+      echo "<tr class='tab_bg_1 helpxora-req-row-attachments'>";
+      echo "<td>" . __('Extensions (comma-separated)', 'helpxora') . "</td>";
+      echo "<td><input type='text' id='helpxora_allowed_extensions_input' class='form-control' name='allowed_extensions' value='" . Html::cleanInputText($this->fields['allowed_extensions'] ?? '') . "' size='80' placeholder='pdf, png, docx…'></td>";
+      echo "</tr>";
+
+      echo "<tr class='tab_bg_1'>";
+      echo "<td>" . __('Description policy', 'helpxora') . "</td>";
+      echo "<td>";
+      Dropdown::showFromArray('description_mode', $description_mode_labels, ['value' => $dm_val]);
+      echo "</td>";
+      echo "</tr>";
+
+      echo "<tr class='tab_bg_1 helpxora-req-row-description'>";
+      echo "<td>" . __('Minimum characters (when description is shown)', 'helpxora') . "</td>";
+      echo "<td><input type='number' name='min_chars' value='" . (int)($this->fields['min_chars'] ?? 10) . "' min='0'></td>";
+      echo "</tr>";
+
+      echo "<tr class='tab_bg_1 helpxora-req-row-description'>";
+      echo "<td>" . __('Maximum characters', 'helpxora') . "</td>";
+      echo "<td><input type='number' name='max_chars' value='" . (int)($this->fields['max_chars'] ?? 500) . "' min='1'></td>";
+      echo "</tr>";
+
+      echo "<tr class='tab_bg_1 helpxora-req-row-description'>";
+      echo "<td>Regex personalizada (Opcional)</td>";
+      echo "<td><input type='text' name='validation_regex' value='" . Html::cleanInputText($this->fields['validation_regex'] ?? '') . "' size='80' placeholder='/^[a-zA-Z0-9\s]+$/'></td>";
+      echo "</tr>";
+
+      echo "<tr class='tab_bg_1 helpxora-req-row-description'>";
+      echo "<td>Restringir texto sin sentido (Anti-Gibberish)</td>";
+      echo "<td>";
+      Dropdown::showYesNo('restrict_gibberish', $this->fields['restrict_gibberish'] ?? 0);
+      echo "</td>";
+      echo "</tr>";
+
       if ($is_modal) {
          echo "<tr><td colspan='2' class='center'>";
          $submit_name = ($ID > 0) ? 'update' : 'add';
@@ -258,6 +354,17 @@ class PluginHelpxoraRequerimiento extends CommonDBTM
                     }
                 });
             });
+
+            function helpxoraToggleReqValidationRowsHelpXora(\$f) {
+                var am = parseInt(\$f.find('select[name=\"attachments_mode\"]').val(), 10) || 0;
+                var dm = parseInt(\$f.find('select[name=\"description_mode\"]').val(), 10) || 0;
+                \$f.find('.helpxora-req-row-attachments').toggle(am !== 0);
+                \$f.find('.helpxora-req-row-description').toggle(dm !== 0);
+            }
+            formTarget.on('change', 'select[name=attachments_mode], select[name=description_mode]', function() {
+                helpxoraToggleReqValidationRowsHelpXora(formTarget);
+            });
+            helpxoraToggleReqValidationRowsHelpXora(formTarget);
 
             formTarget.off('submit').on('submit', function(e) {
                 e.preventDefault();
@@ -292,6 +399,24 @@ class PluginHelpxoraRequerimiento extends CommonDBTM
       }
       else {
          $this->showFormButtons($options);
+         echo "<script>
+         $(function() {
+            var \$f = \$('select[name=\"attachments_mode\"]').closest('form');
+            if (!\$f.length) {
+               return;
+            }
+            function helpxoraToggleReqValidationRowsHelpXora(\$form) {
+               var am = parseInt(\$form.find('select[name=\"attachments_mode\"]').val(), 10) || 0;
+               var dm = parseInt(\$form.find('select[name=\"description_mode\"]').val(), 10) || 0;
+               \$form.find('.helpxora-req-row-attachments').toggle(am !== 0);
+               \$form.find('.helpxora-req-row-description').toggle(dm !== 0);
+            }
+            \$f.on('change', 'select[name=attachments_mode], select[name=description_mode]', function() {
+               helpxoraToggleReqValidationRowsHelpXora(\$f);
+            });
+            helpxoraToggleReqValidationRowsHelpXora(\$f);
+         });
+         </script>";
       }
       return true;
    }

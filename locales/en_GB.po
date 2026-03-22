@@ -44,3 +44,135 @@ msgstr "Invalid or inactive requirement. Please choose again from the menu."
 
 msgid "File could not be attached due to system restrictions."
 msgstr "File could not be attached due to system restrictions."
+
+msgid "The description must be at least %d characters for this requirement."
+msgstr "The description must be at least %d characters for this requirement."
+
+msgid "The description must not exceed %d characters for this requirement."
+msgstr "The description must not exceed %d characters for this requirement."
+
+msgid "The ticket could not be created."
+msgstr "The ticket could not be created."
+
+msgid "Description is required for this requirement."
+msgstr "Description is required for this requirement."
+
+msgid "Too many files attached (maximum %d)."
+msgstr "Too many files attached (maximum %d)."
+
+msgid "You must attach exactly %d file(s) for this requirement."
+msgstr "You must attach exactly %d file(s) for this requirement."
+
+msgid "Minimum character count cannot be negative."
+msgstr "Minimum character count cannot be negative."
+
+msgid "Maximum character count must be at least 1."
+msgstr "Maximum character count must be at least 1."
+
+msgid "Minimum characters cannot exceed maximum characters."
+msgstr "Minimum characters cannot exceed maximum characters."
+
+msgid "Maximum files must be between 1 and 10."
+msgstr "Maximum files must be between 1 and 10."
+
+msgid "The validation regular expression is not valid."
+msgstr "The validation regular expression is not valid."
+
+msgid "Maximum number of attachments"
+msgstr "Maximum number of attachments"
+
+msgid "Require all attachments (exactly the maximum number)"
+msgstr "Require all attachments (exactly the maximum number)"
+
+msgid "Allowed file types"
+msgstr "Allowed file types"
+
+msgid "Preset categories add their extensions on save; you can combine them with the list below."
+msgstr "Preset categories add their extensions on save; you can combine them with the list below."
+
+msgid "Extensions (comma-separated)"
+msgstr "Extensions (comma-separated)"
+
+msgid "Allowed file categories (adds extensions)"
+msgstr "Allowed file categories (adds extensions)"
+
+msgid "Additional extensions (comma-separated, optional)"
+msgstr "Additional extensions (comma-separated, optional)"
+
+msgid "Description text required"
+msgstr "Description text required"
+
+msgid "Minimum characters (when description is shown)"
+msgstr "Minimum characters (when description field is shown)"
+
+msgid "Maximum characters"
+msgstr "Maximum characters"
+
+msgid "PDF"
+msgstr "PDF"
+
+msgid "Spreadsheet (Excel, CSV…)"
+msgstr "Spreadsheet (Excel, CSV…)"
+
+msgid "Word processor (Word, ODT…)"
+msgstr "Word processor (Word, ODT…)"
+
+msgid "Image"
+msgstr "Image"
+
+msgid "Video"
+msgstr "Video"
+
+msgid "Description contains invalid patterns and cannot be processed."
+msgstr "Description contains invalid patterns and cannot be processed."
+
+msgid "Description format does not match the required pattern."
+msgstr "Description format does not match the required pattern."
+
+msgid "Description appears to be invalid or meaningless."
+msgstr "Description appears to be invalid or meaningless."
+
+msgid "Attachments are not allowed for this requirement."
+msgstr "Attachments are not allowed for this requirement."
+
+msgid "File extension is not allowed for this requirement."
+msgstr "File extension is not allowed for this requirement."
+
+msgid "Attachments policy"
+msgstr "Attachments policy"
+
+msgid "Attachments: none"
+msgstr "None (no attachments)"
+
+msgid "Attachments: required (exactly the maximum)"
+msgstr "Required (exactly the maximum number)"
+
+msgid "Attachments: optional (up to the maximum)"
+msgstr "Optional (up to the maximum number)"
+
+msgid "Description policy"
+msgstr "Description policy"
+
+msgid "Description: none (no text field)"
+msgstr "None (no description field)"
+
+msgid "Description: required"
+msgstr "Required"
+
+msgid "Description: optional"
+msgstr "Optional"
+
+msgid "Invalid attachments mode for this requirement."
+msgstr "Invalid attachments mode for this requirement."
+
+msgid "Invalid description mode for this requirement."
+msgstr "Invalid description mode for this requirement."
+
+msgid "Enable at least one input channel (attachments or description) so users can send a response from the chat."
+msgstr "Enable at least one input channel (attachments or description) so users can send a response from the chat."
+
+msgid "This requirement is not configured for chat: enable attachments or description."
+msgstr "This requirement is not configured for chat: enable attachments or description."
+
+msgid "The text does not look valid."
+msgstr "The text does not look valid."

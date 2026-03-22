@@ -44,3 +44,135 @@ msgstr "Requerimiento inválido o inactivo. Elija de nuevo desde el menú."
 
 msgid "File could not be attached due to system restrictions."
 msgstr "No se pudo adjuntar el archivo por restricciones del sistema."
+
+msgid "The description must be at least %d characters for this requirement."
+msgstr "La descripción debe tener al menos %d caracteres para este requerimiento."
+
+msgid "The description must not exceed %d characters for this requirement."
+msgstr "La descripción no debe superar %d caracteres para este requerimiento."
+
+msgid "The ticket could not be created."
+msgstr "No se pudo crear el ticket."
+
+msgid "Description is required for this requirement."
+msgstr "La descripción es obligatoria para este requerimiento."
+
+msgid "Too many files attached (maximum %d)."
+msgstr "Demasiados archivos adjuntos (máximo %d)."
+
+msgid "You must attach exactly %d file(s) for this requirement."
+msgstr "Debe adjuntar exactamente %d archivo(s) para este requerimiento."
+
+msgid "Minimum character count cannot be negative."
+msgstr "El mínimo de caracteres no puede ser negativo."
+
+msgid "Maximum character count must be at least 1."
+msgstr "El máximo de caracteres debe ser al menos 1."
+
+msgid "Minimum characters cannot exceed maximum characters."
+msgstr "El mínimo de caracteres no puede superar al máximo."
+
+msgid "Maximum files must be between 1 and 10."
+msgstr "El máximo de archivos debe estar entre 1 y 10."
+
+msgid "The validation regular expression is not valid."
+msgstr "La expresión regular de validación no es válida."
+
+msgid "Maximum number of attachments"
+msgstr "Número máximo de adjuntos"
+
+msgid "Require all attachments (exactly the maximum number)"
+msgstr "Exigir todos los adjuntos (exactamente el máximo permitido)"
+
+msgid "Allowed file types"
+msgstr "Tipos de archivo permitidos"
+
+msgid "Preset categories add their extensions on save; you can combine them with the list below."
+msgstr "Las categorías predefinidas añaden sus extensiones al guardar; puede combinarlas con la lista siguiente."
+
+msgid "Extensions (comma-separated)"
+msgstr "Extensiones (separadas por comas)"
+
+msgid "Allowed file categories (adds extensions)"
+msgstr "Categorías de archivo permitidas (añade extensiones)"
+
+msgid "Additional extensions (comma-separated, optional)"
+msgstr "Extensiones adicionales (separadas por comas, opcional)"
+
+msgid "Description text required"
+msgstr "Descripción de texto obligatoria"
+
+msgid "Minimum characters (when description is shown)"
+msgstr "Mínimo de caracteres (cuando se muestra la descripción)"
+
+msgid "Maximum characters"
+msgstr "Máximo de caracteres"
+
+msgid "PDF"
+msgstr "PDF"
+
+msgid "Spreadsheet (Excel, CSV…)"
+msgstr "Hoja de cálculo (Excel, CSV…)"
+
+msgid "Word processor (Word, ODT…)"
+msgstr "Procesador de texto (Word, ODT…)"
+
+msgid "Image"
+msgstr "Imagen"
+
+msgid "Video"
+msgstr "Vídeo"
+
+msgid "Description contains invalid patterns and cannot be processed."
+msgstr "La descripción contiene patrones no válidos y no puede procesarse."
+
+msgid "Description format does not match the required pattern."
+msgstr "El formato de la descripción no coincide con el patrón exigido."
+
+msgid "Description appears to be invalid or meaningless."
+msgstr "La descripción parece inválida o sin sentido."
+
+msgid "Attachments are not allowed for this requirement."
+msgstr "No se permiten adjuntos para este requerimiento."
+
+msgid "File extension is not allowed for this requirement."
+msgstr "La extensión del archivo no está permitida para este requerimiento."
+
+msgid "Attachments policy"
+msgstr "Política de adjuntos"
+
+msgid "Attachments: none"
+msgstr "Sin adjuntos"
+
+msgid "Attachments: required (exactly the maximum)"
+msgstr "Obligatorio (exactamente el máximo permitido)"
+
+msgid "Attachments: optional (up to the maximum)"
+msgstr "Opcional (hasta el máximo permitido)"
+
+msgid "Description policy"
+msgstr "Política de descripción"
+
+msgid "Description: none (no text field)"
+msgstr "Sin descripción (sin campo de texto)"
+
+msgid "Description: required"
+msgstr "Descripción obligatoria"
+
+msgid "Description: optional"
+msgstr "Descripción opcional"
+
+msgid "Invalid attachments mode for this requirement."
+msgstr "Modo de adjuntos no válido para este requerimiento."
+
+msgid "Invalid description mode for this requirement."
+msgstr "Modo de descripción no válido para este requerimiento."
+
+msgid "Enable at least one input channel (attachments or description) so users can send a response from the chat."
+msgstr "Active al menos un canal de entrada (adjuntos o descripción) para que el usuario pueda enviar una respuesta desde el chat."
+
+msgid "This requirement is not configured for chat: enable attachments or description."
+msgstr "Este requerimiento no está configurado para el chat: habilite adjuntos o descripción."
+
+msgid "The text does not look valid."
+msgstr "El texto no parece válido."

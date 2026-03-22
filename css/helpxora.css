@@ -107,6 +107,60 @@
     background: none;
 }
 
+.helpxora-image-preview {
+    max-width: 100%;
+    border-radius: 5px;
+    cursor: zoom-in;
+    transition: transform 0.15s ease;
+}
+
+.helpxora-image-preview:hover {
+    transform: scale(1.02);
+}
+
+#glpi-helpxora-image-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.helpxora-image-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+}
+
+.helpxora-image-modal-content {
+    position: relative;
+    max-width: min(95vw, 1200px);
+    max-height: 90vh;
+    width: auto;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+    z-index: 1;
+}
+
+.helpxora-image-modal-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 2;
+}
+
 .helpxora-options {
     display: flex;
     flex-direction: column;
@@ -138,22 +192,23 @@
     display: block;
 }
 
-#glpi-helpxora-file-preview {
+.helpxora-file-preview-wrap {
     display: none;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
     background-color: #e8f5e9;
     color: #2e7d32;
     font-size: 11px;
-    padding: 3px 8px;
-    border-radius: 12px;
-    margin-bottom: 5px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    margin-bottom: 8px;
     max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    cursor: default;
     border: 1px solid #a5d6a7;
+}
+
+.helpxora-file-preview-wrap--visible {
+    display: flex;
 }
 
 .helpxora-preview-remove {
@@ -174,18 +229,107 @@
     gap: 8px;
 }
 
+.helpxora-composer-main-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.helpxora-desc-send-flex {
+    display: flex;
+    flex: 1;
+    align-items: stretch;
+    gap: 8px;
+    min-width: 0;
+}
+
+.helpxora-desc-field-wrap {
+    flex: 1;
+    min-width: 0;
+}
+
 #glpi-helpxora-text {
     flex: 1;
-    padding: 8px;
+    width: 100%;
+    min-height: 36px;
+    height: 36px;
+    padding: 6px 10px;
     border: 1px solid #ccc;
     border-radius: 5px;
     outline: none;
     font-size: 13px;
+    font-family: inherit;
+    box-sizing: border-box;
 }
 
 #glpi-helpxora-text:focus {
     border-color: #86b7fe;
     box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.15);
+}
+
+.helpxora-live-errors {
+    color: #b71c1c;
+    font-size: 12px;
+    min-height: 1.2em;
+    margin-bottom: 6px;
+    line-height: 1.35;
+}
+
+.helpxora-composer-footer {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 6px;
+    width: 100%;
+}
+
+.helpxora-footer-status {
+    flex: 1;
+    min-width: 0;
+    font-size: 11px;
+    line-height: 1.35;
+    color: #b71c1c;
+    font-weight: 600;
+    text-align: left;
+}
+
+.helpxora-char-count {
+    flex-shrink: 0;
+    font-size: 11px;
+    color: #666;
+    text-align: right;
+    margin: 0;
+}
+
+.helpxora-char-count--invalid {
+    color: #b71c1c;
+    font-weight: 600;
+}
+
+.helpxora-hint {
+    opacity: 0.85;
+}
+
+.helpxora-file-chip {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 4px;
+    margin-bottom: 2px;
+    font-size: 11px;
+    background: rgba(255, 255, 255, 0.65);
+    padding: 2px 6px;
+    border-radius: 6px;
+}
+
+.helpxora-chip-remove {
+    border: none;
+    background: transparent;
+    padding: 0 2px;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
 }
 
 #glpi-helpxora-file-label {
@@ -209,9 +353,14 @@
     cursor: pointer;
     font-size: 16px;
     flex-shrink: 0;
-    transition: opacity 0.2s;
-    min-width: 38px;
+    transition: background-color 0.2s, color 0.2s, opacity 0.2s;
+    min-width: 42px;
     text-align: center;
+    align-self: stretch;
+}
+
+#glpi-helpxora-send.helpxora-send-blocked {
+    cursor: not-allowed;
 }
 
 #glpi-helpxora-send:disabled {
@@ -269,4 +418,18 @@
 #add_consulta_modal #form_add_consulta {
     max-height: none;
     overflow: visible;
+}
+
+.helpxora-filetypes-unified .helpxora-filetypes-hint {
+    font-size: 12px;
+    color: #555;
+    margin: 0 0 8px 0;
+    line-height: 1.35;
+}
+
+.helpxora-filetypes-unified .helpxora-filetypes-sublabel {
+    display: block;
+    margin: 10px 0 4px;
+    font-weight: 600;
+    font-size: 13px;
 }

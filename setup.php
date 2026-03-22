@@ -1,25 +1,15 @@
 <?php
 
-use Glpi\Plugin\Hooks;
-
-define('PLUGIN_HELPXORA_VERSION', '1.0.1');
+define('PLUGIN_HELPXORA_VERSION', '1.0.2');
 define('PLUGIN_HELPXORA_MIN_GLPI_VERSION', '10.0.0');
 define('PLUGIN_HELPXORA_MAX_GLPI_VERSION', '10.0.99');
 
+require_once __DIR__ . '/hook.php';
+
 function plugin_init_helpxora() {
-   global $PLUGIN_HOOKS, $CFG_GLPI;
+   global $PLUGIN_HOOKS;
 
    $PLUGIN_HOOKS['csrf_compliant']['helpxora'] = true;
-
-   $helpxora_header_tags = [];
-   if (isset($_SERVER['PHP_SELF']) && strpos($_SERVER['PHP_SELF'], 'helpxora') !== false && strpos($_SERVER['PHP_SELF'], 'config') !== false) {
-      $root = $CFG_GLPI['root_doc'] ?? '';
-      $helpxora_header_tags = [
-         ['tag' => 'script', 'properties' => ['type' => 'text/javascript', 'src' => $root . '/public/lib/fuzzy.js']],
-         ['tag' => 'script', 'properties' => ['type' => 'text/javascript', 'src' => $root . '/js/fuzzysearch.js']],
-      ];
-   }
-   $PLUGIN_HOOKS[Hooks::ADD_HEADER_TAG]['helpxora'] = $helpxora_header_tags;
 
    Plugin::registerClass(PluginHelpxoraConfig::class, ['addtabon' => [PluginHelpxoraConfig::class]]);
    Plugin::registerClass(PluginHelpxoraConsulta::class, ['addtabon' => [PluginHelpxoraConfig::class]]);
@@ -28,13 +18,22 @@ function plugin_init_helpxora() {
    Plugin::registerClass(PluginHelpxoraChat::class);
 
    if (Session::getLoginUserID()) {
-      $PLUGIN_HOOKS[Hooks::MENU_TOADD]['helpxora'] = [
+      $PLUGIN_HOOKS['menu_toadd']['helpxora'] = [
          'config' => PluginHelpxoraConfig::class
       ];
    }
 
-   $PLUGIN_HOOKS[Hooks::ADD_CSS]['helpxora'] = 'css/helpxora.css';
-   $PLUGIN_HOOKS[Hooks::ADD_JAVASCRIPT]['helpxora'] = 'js/helpxora.js';
+   $PLUGIN_HOOKS['add_css']['helpxora'] = 'css/helpxora.css';
+   $PLUGIN_HOOKS['add_javascript']['helpxora'] = 'js/helpxora.js';
+
+   $PLUGIN_HOOKS['pre_item_add']['helpxora'] = [
+      'Ticket'                      => 'plugin_helpxora_pre_item_add',
+      'PluginHelpxoraRequerimiento' => 'plugin_helpxora_pre_item_add',
+   ];
+   $PLUGIN_HOOKS['pre_item_update']['helpxora'] = [
+      'Ticket'                      => 'plugin_helpxora_pre_item_update',
+      'PluginHelpxoraRequerimiento' => 'plugin_helpxora_pre_item_update',
+   ];
 }
 
 function plugin_version_helpxora() {
@@ -50,7 +49,7 @@ function plugin_version_helpxora() {
             'max' => PLUGIN_HELPXORA_MAX_GLPI_VERSION,
          ],
          'php' => [
-            'min' => '7.4',
+            'min' => '8.1',
          ],
       ],
    ];

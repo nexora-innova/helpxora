@@ -78,7 +78,11 @@ class PluginHelpxoraConsulta extends CommonDBTM
       foreach ($result as $data) {
          echo "<tr class='tab_bg_1'>";
          echo "<td class='center'>" . $data['id'] . "</td>";
-         echo "<td>" . htmlspecialchars($data['question'], ENT_QUOTES, 'UTF-8') . "</td>";
+         $qplain = trim(html_entity_decode(strip_tags((string)($data['question'] ?? '')), ENT_QUOTES, 'UTF-8'));
+         if (Toolbox::strlen($qplain) > 120) {
+            $qplain = Toolbox::substr($qplain, 0, 117) . '…';
+         }
+         echo "<td>" . htmlspecialchars($qplain, ENT_QUOTES, 'UTF-8') . "</td>";
          echo "<td class='center'>" . ($data['is_active'] ? 'Sí' : 'No') . "</td>";
 
          echo "<td class='center'>";
@@ -107,9 +111,8 @@ class PluginHelpxoraConsulta extends CommonDBTM
       echo "<script>
       function loadConsultaModal(id) {
           var \$body = $('#" . $modal_id . " .modal-body');
-          var _editorId = 'helpxora_consulta_answer_modal';
-          if (typeof tinymce !== 'undefined' && tinymce.get(_editorId)) {
-              tinymce.get(_editorId).remove();
+          if (typeof tinymce !== 'undefined' && tinymce.get('helpxora_consulta_answer_modal')) {
+              tinymce.get('helpxora_consulta_answer_modal').remove();
           }
           $('#" . $modal_id . "Label').text(id > 0 ? 'Editar Consulta' : 'Añadir una Consulta');
           \$body.html('<div class=\"center\"><span class=\"spinner-border\"></span> Cargando...</div>');
@@ -152,7 +155,10 @@ class PluginHelpxoraConsulta extends CommonDBTM
 
       echo "<tr class='tab_bg_1'>";
       echo "<td>Pregunta</td>";
-      echo "<td><input type='text' name='question' value='" . Html::cleanInputText($this->fields['question'] ?? '') . "' size='80'></td>";
+      echo "<td>";
+      $q_val = htmlspecialchars(strip_tags($this->fields['question'] ?? ''), ENT_QUOTES);
+      echo "<input type='text' name='question' value='{$q_val}' class='form-control' style='width:100%;'>";
+      echo "</td>";
       echo "</tr>";
 
       echo "<tr class='tab_bg_1'>";

@@ -25,8 +25,6 @@ function initHelpxora(config) {
     const bubbleIcon = config.bubble_icon ? (config.bubble_icon.match(/^https?:\/\//) || config.bubble_icon.startsWith('/') ? `<img src="${config.bubble_icon}" alt="Bubble Icon" style="width: 100%; height: 100%; object-fit: cover;">` : config.bubble_icon) : '💬';
 
     const sendLabel = config.send_button_label || '➢';
-    const sendBg    = config.color_send_button_bg || '#28a745';
-    const sendColor = config.color_send_button || '#ffffff';
 
     widget.innerHTML = `
         <style>
@@ -35,7 +33,6 @@ function initHelpxora(config) {
           .helpxora-msg.user { background-color: ${config.color_user_bubble} !important; }
           .helpxora-options button { background-color: ${config.color_bot_buttons} !important; }
           .helpxora-options button:hover { background-color: ${config.color_hover} !important; }
-          #glpi-helpxora-send { background-color: ${sendBg} !important; color: ${sendColor} !important; }
         </style>
         <div id="glpi-helpxora-button">
             ${bubbleIcon}
@@ -50,12 +47,21 @@ function initHelpxora(config) {
             </div>
             <div id="glpi-helpxora-messages"></div>
             <div id="glpi-helpxora-input-area" style="display: none;">
-                <span id="glpi-helpxora-file-preview"></span>
-                <div class="helpxora-input-row">
-                    <input type="text" id="glpi-helpxora-text" placeholder="Escribe algo...">
+                <div id="glpi-helpxora-live-errors" class="helpxora-live-errors" role="alert" aria-live="polite"></div>
+                <div id="glpi-helpxora-file-preview" class="helpxora-file-preview-wrap"></div>
+                <div class="helpxora-composer-main-row">
                     <label for="glpi-helpxora-file" id="glpi-helpxora-file-label" title="Adjuntar archivo">📎</label>
-                    <input type="file" id="glpi-helpxora-file" style="display:none;">
-                    <button id="glpi-helpxora-send">${sendLabel}</button>
+                    <input type="file" id="glpi-helpxora-file" style="display:none;" multiple>
+                    <div class="helpxora-desc-send-flex">
+                        <div id="glpi-helpxora-desc-field-wrap" class="helpxora-desc-field-wrap">
+                            <input type="text" id="glpi-helpxora-text" maxlength="65535" placeholder="Escribe algo..." autocomplete="off">
+                        </div>
+                        <button type="button" id="glpi-helpxora-send" class="helpxora-send-btn">${sendLabel}</button>
+                    </div>
+                </div>
+                <div class="helpxora-composer-footer">
+                    <div id="glpi-helpxora-footer-status" class="helpxora-footer-status" role="status" aria-live="polite"></div>
+                    <div id="glpi-helpxora-char-count" class="helpxora-char-count"></div>
                 </div>
             </div>
         </div>
@@ -65,20 +71,17 @@ function initHelpxora(config) {
 
     document.getElementById('glpi-helpxora-button').addEventListener('click', openChat);
     document.getElementById('glpi-helpxora-close').addEventListener('click', closeChat);
+    applyHelpxoraSendButtonState(false);
 }
 
 let isChatOpen = false;
 let currentFlow = null;
 let currentData = {};
+let activeZoomModal = null;
 
 function openChat() {
     document.getElementById('glpi-helpxora-window').style.display = 'flex';
     document.getElementById('glpi-helpxora-button').style.display = 'none';
-
-    // #region agent log
-    const _inputAreaOnOpen = document.getElementById('glpi-helpxora-input-area');
-    fetch('http://127.0.0.1:7616/ingest/ef63590d-fcdf-482f-b5f5-abe23290346f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ea21bd'},body:JSON.stringify({sessionId:'ea21bd',runId:'run1',hypothesisId:'H-A H-B',location:'helpxora.js:openChat',message:'openChat called',data:{isChatOpen:isChatOpen,currentFlow:currentFlow,inputAreaDisplay:_inputAreaOnOpen?_inputAreaOnOpen.style.display:'NOT FOUND'},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
 
     if (!isChatOpen) {
         isChatOpen = true;
@@ -91,23 +94,14 @@ function openChat() {
 }
 
 function resetFlow() {
-    // #region agent log
-    fetch('http://127.0.0.1:7616/ingest/ef63590d-fcdf-482f-b5f5-abe23290346f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ea21bd'},body:JSON.stringify({sessionId:'ea21bd',runId:'run1',hypothesisId:'H-C',location:'helpxora.js:resetFlow',message:'resetFlow called',data:{isChatOpen:isChatOpen,currentFlow:currentFlow,stack:(new Error()).stack.split('\n').slice(1,4).join(' | ')},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
-    const inputArea = document.getElementById('glpi-helpxora-input-area');
-    if (inputArea) inputArea.style.display = 'none';
-    const preview = document.getElementById('glpi-helpxora-file-preview');
-    if (preview) { preview.textContent = ''; preview.style.display = 'none'; }
+    resetComposerState();
     currentFlow = null;
     currentData = {};
     showMenu();
 }
 
 function closeChat() {
-    // #region agent log
-    const _inputAreaOnClose = document.getElementById('glpi-helpxora-input-area');
-    fetch('http://127.0.0.1:7616/ingest/ef63590d-fcdf-482f-b5f5-abe23290346f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ea21bd'},body:JSON.stringify({sessionId:'ea21bd',runId:'run1',hypothesisId:'H-A H-B H-C',location:'helpxora.js:closeChat',message:'closeChat called',data:{isChatOpen:isChatOpen,currentFlow:currentFlow,currentData:JSON.stringify(currentData),inputAreaDisplay:_inputAreaOnClose?_inputAreaOnClose.style.display:'NOT FOUND'},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
+    resetChatSession();
     document.getElementById('glpi-helpxora-window').style.display = 'none';
     document.getElementById('glpi-helpxora-button').style.display = 'flex';
     isChatOpen = false;
@@ -132,11 +126,16 @@ function showUserMessage(text) {
 }
 
 function showImage(url) {
-    if (!url) return;
+    const safeUrl = sanitizeImageUrl(url);
+    if (!safeUrl) return;
     const messagesDiv = document.getElementById('glpi-helpxora-messages');
     const msg = document.createElement('div');
     msg.className = 'helpxora-msg bot img-msg';
-    msg.innerHTML = `<img src="${url}" style="max-width: 100%; border-radius: 5px;">`;
+    msg.innerHTML = `<img src="${safeUrl}" class="helpxora-image-preview" alt="Imagen de consulta">`;
+    const img = msg.querySelector('img');
+    if (img) {
+        img.addEventListener('click', () => openImageZoom(safeUrl));
+    }
     messagesDiv.appendChild(msg);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
@@ -241,58 +240,334 @@ function showRequerimientos() {
             showBotOptions(data.options, (selected) => {
                 currentFlow = 'create_ticket';
                 currentData.req_id = selected.id;
+                currentData.helpxoraFileQueue = [];
+                currentData.helpxoraAttachmentBanner = '';
+                const attachMode = normalizeHelpxoraMode(selected.attachments_mode, 0);
+                const descMode = normalizeHelpxoraMode(selected.description_mode, 1);
+                currentData.req_rules = {
+                    attachments_mode: attachMode,
+                    max_files: Number(selected.max_files || 1),
+                    allowed_extensions: String(selected.allowed_extensions || ""),
+                    min_chars: Number(selected.min_chars ?? 10),
+                    max_chars: Number(selected.max_chars || 500),
+                    validation_regex: String(selected.validation_regex || ""),
+                    restrict_gibberish: Number(selected.restrict_gibberish || 0),
+                    description_mode: descMode
+                };
 
-                let msg = "Por favor, describe detalladamente el problema o solicitud.";
+                const rules = currentData.req_rules;
+                const maxF = Math.min(10, Math.max(1, Number(rules.max_files || 1)));
+
+                let msg = "";
+                if (descMode === 0) {
+                    msg = "No hace falta escribir descripción; pulse enviar cuando esté listo.";
+                } else if (descMode === 1) {
+                    msg = "Por favor, describe detalladamente el problema o solicitud.";
+                } else {
+                    msg = "Puede añadir una descripción o enviar solo con adjuntos; pulse enviar cuando esté listo.";
+                }
                 if (selected.custom_response && selected.custom_response.trim() !== '') {
                     msg = selected.custom_response;
                 }
-                msg += "<br><small style='opacity:0.8;'>Puedes adjuntar un archivo usando el ícono 📎</small>";
+                if (attachMode === 1) {
+                    msg += "<br><small class=\"helpxora-hint\">Debe adjuntar exactamente " + maxF + " archivo(s). Usa 📎.</small>";
+                } else if (attachMode === 2) {
+                    msg += "<br><small class=\"helpxora-hint\">Hasta " + maxF + " archivo(s) opcional(es). Usa 📎.</small>";
+                }
 
                 showBotMessage(msg);
 
                 const inputArea = document.getElementById('glpi-helpxora-input-area');
                 inputArea.style.display = 'block';
-                // #region agent log
-                fetch('http://127.0.0.1:7616/ingest/ef63590d-fcdf-482f-b5f5-abe23290346f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ea21bd'},body:JSON.stringify({sessionId:'ea21bd',runId:'run1',hypothesisId:'H-A H-D',location:'helpxora.js:showRequerimientos',message:'inputArea set to block by showRequerimientos',data:{req_id:selected.id,currentFlow:currentFlow},timestamp:Date.now()})}).catch(()=>{});
-                // #endregion
 
-                const preview = document.getElementById('glpi-helpxora-file-preview');
-                if (preview) { preview.textContent = ''; preview.style.display = 'none'; }
-
-                const sendBtn   = document.getElementById('glpi-helpxora-send');
+                const sendBtn = document.getElementById('glpi-helpxora-send');
                 const textInput = document.getElementById('glpi-helpxora-text');
                 const fileInput = document.getElementById('glpi-helpxora-file');
+                const fileLabel = document.getElementById('glpi-helpxora-file-label');
 
-                const newInput = textInput.cloneNode(true);
-                textInput.parentNode.replaceChild(newInput, textInput);
+                const newTa = textInput.cloneNode(true);
+                textInput.parentNode.replaceChild(newTa, textInput);
                 const newSendBtn = sendBtn.cloneNode(true);
                 sendBtn.parentNode.replaceChild(newSendBtn, sendBtn);
                 const newFileInput = fileInput.cloneNode(true);
                 fileInput.parentNode.replaceChild(newFileInput, fileInput);
 
-                newFileInput.addEventListener('change', function () {
-                    const pEl = document.getElementById('glpi-helpxora-file-preview');
-                    if (newFileInput.files.length > 0) {
-                        pEl.innerHTML = '📎 ' + escapeHtml(newFileInput.files[0].name) + ' <span class="helpxora-preview-remove" title="Quitar archivo">✕</span>';
-                        pEl.style.display = 'inline-flex';
-                        pEl.querySelector('.helpxora-preview-remove').addEventListener('click', function (e) {
-                            e.stopPropagation();
-                            newFileInput.value = '';
-                            pEl.textContent = '';
-                            pEl.style.display = 'none';
-                        });
+                const descFieldWrap = document.getElementById('glpi-helpxora-desc-field-wrap');
+                if (descFieldWrap) {
+                    descFieldWrap.style.display = descMode === 0 ? 'none' : '';
+                }
+                if (descMode === 0) {
+                    newTa.value = '';
+                }
+                const mc = Number(rules.max_chars || 500);
+                newTa.setAttribute('maxlength', mc > 0 ? String(mc) : '65535');
+
+                if (attachMode === 1 || attachMode === 2) {
+                    fileLabel.style.display = '';
+                    newFileInput.multiple = maxF > 1;
+                    const acceptVal = buildHelpxoraFileAcceptAttribute(rules.allowed_extensions);
+                    if (acceptVal) {
+                        newFileInput.setAttribute('accept', acceptVal);
                     } else {
-                        pEl.textContent = '';
-                        pEl.style.display = 'none';
+                        newFileInput.removeAttribute('accept');
                     }
+                } else {
+                    fileLabel.style.display = 'none';
+                    newFileInput.value = '';
+                    newFileInput.removeAttribute('accept');
+                }
+
+                const preview = document.getElementById('glpi-helpxora-file-preview');
+                if (preview) {
+                    preview.textContent = '';
+                    preview.style.display = 'none';
+                }
+
+                function runLiveValidation() {
+                    updateTicketComposerUi(newTa, newFileInput, rules);
+                }
+
+                newTa.addEventListener('input', runLiveValidation);
+                newFileInput.addEventListener('change', function () {
+                    helpxoraAppendFilesFromInput(newFileInput, preview, rules);
+                    runLiveValidation();
                 });
 
                 newSendBtn.addEventListener('click', handleTicketSubmit);
-                newInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') handleTicketSubmit();
+                newTa.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleTicketSubmit();
+                    }
                 });
+
+                runLiveValidation();
             });
         });
+}
+
+function normalizeHelpxoraMode(value, defaultMode) {
+    if (value === undefined || value === null || value === '') {
+        return defaultMode;
+    }
+    const n = Number(value);
+    if (Number.isNaN(n) || n < 0 || n > 2) {
+        return defaultMode;
+    }
+    return n;
+}
+
+function buildHelpxoraFileAcceptAttribute(allowedCsv) {
+    const raw = String(allowedCsv || "").trim();
+    if (!raw) {
+        return "";
+    }
+    const parts = raw.split(",").map(function (v) {
+        return v.trim().toLowerCase();
+    }).filter(Boolean);
+    if (!parts.length) {
+        return "";
+    }
+    return parts.map(function (ext) {
+        const e = ext.startsWith(".") ? ext.slice(1) : ext;
+        return e ? "." + e : "";
+    }).filter(Boolean).join(",");
+}
+
+function helpxoraGetTicketFileQueue() {
+    if (currentData && Array.isArray(currentData.helpxoraFileQueue)) {
+        return currentData.helpxoraFileQueue;
+    }
+    return [];
+}
+
+function helpxoraRenderFileQueuePreview(previewEl, rules, rejectMsg) {
+    if (!previewEl) {
+        return;
+    }
+    if (currentData && arguments.length >= 3) {
+        currentData.helpxoraAttachmentBanner = rejectMsg ? String(rejectMsg) : '';
+    }
+    const queue = helpxoraGetTicketFileQueue();
+    previewEl.innerHTML = '';
+    if (!queue.length) {
+        previewEl.style.display = 'none';
+        previewEl.classList.remove('helpxora-file-preview-wrap--visible');
+        return;
+    }
+    previewEl.style.display = 'flex';
+    previewEl.classList.add('helpxora-file-preview-wrap--visible');
+    const n = queue.length;
+    for (let idx = 0; idx < n; idx++) {
+        const file = queue[idx];
+        const span = document.createElement('span');
+        span.className = 'helpxora-file-chip';
+        span.appendChild(document.createTextNode('📎 ' + file.name + ' '));
+        const rm = document.createElement('button');
+        rm.type = 'button';
+        rm.className = 'helpxora-preview-remove helpxora-chip-remove';
+        rm.setAttribute('aria-label', 'Quitar archivo');
+        rm.textContent = '\u00D7';
+        rm.setAttribute('data-helpxora-q', String(idx));
+        rm.addEventListener('click', function (ev) {
+            const i = parseInt(ev.currentTarget.getAttribute('data-helpxora-q'), 10);
+            const q = helpxoraGetTicketFileQueue();
+            if (!Number.isNaN(i) && i >= 0 && i < q.length) {
+                q.splice(i, 1);
+            }
+            helpxoraRenderFileQueuePreview(previewEl, rules, '');
+            const ti = document.getElementById('glpi-helpxora-text');
+            const fi = document.getElementById('glpi-helpxora-file');
+            if (currentData && currentData.req_rules && ti && fi) {
+                updateTicketComposerUi(ti, fi, currentData.req_rules);
+            }
+        });
+        span.appendChild(rm);
+        previewEl.appendChild(span);
+    }
+}
+
+function helpxoraAppendFilesFromInput(fileInput, previewEl, rules) {
+    if (!fileInput || !currentData) {
+        return;
+    }
+    const maxF = Math.min(10, Math.max(1, Number(rules.max_files || 1)));
+    if (!Array.isArray(currentData.helpxoraFileQueue)) {
+        currentData.helpxoraFileQueue = [];
+    }
+    const queue = currentData.helpxoraFileQueue;
+    const dt = fileInput.files;
+    let rejectMsg = '';
+    if (dt && dt.length) {
+        for (let i = 0; i < dt.length; i++) {
+            const f = dt[i];
+            if (!extensionAllowedForRequirement(f.name, rules.allowed_extensions)) {
+                rejectMsg = 'Extensión no permitida: ' + f.name;
+                continue;
+            }
+            if (queue.length >= maxF) {
+                rejectMsg = 'Máximo ' + maxF + ' archivo(s).';
+                break;
+            }
+            const dup = queue.some(function (q) {
+                return q.name === f.name && q.size === f.size;
+            });
+            if (!dup) {
+                queue.push(f);
+            }
+        }
+    }
+    fileInput.value = '';
+    helpxoraRenderFileQueuePreview(previewEl, rules, rejectMsg);
+}
+
+function applyHelpxoraSendButtonState(hasErrors) {
+    const sendBtn = document.getElementById('glpi-helpxora-send');
+    if (!sendBtn) {
+        return;
+    }
+    const okBg = glpiHelpxoraConfig.color_send_button_bg || '#28a745';
+    const okColor = glpiHelpxoraConfig.color_send_button || '#ffffff';
+    const blockedBg = '#9e9e9e';
+    const blockedColor = '#f8f9fa';
+    if (hasErrors) {
+        sendBtn.style.backgroundColor = blockedBg;
+        sendBtn.style.color = blockedColor;
+        sendBtn.classList.add('helpxora-send-blocked');
+        sendBtn.classList.remove('helpxora-send-ready');
+    } else {
+        sendBtn.style.backgroundColor = okBg;
+        sendBtn.style.color = okColor;
+        sendBtn.classList.add('helpxora-send-ready');
+        sendBtn.classList.remove('helpxora-send-blocked');
+    }
+}
+
+function extensionAllowedForRequirement(filename, allowedCsv) {
+    const raw = String(allowedCsv || "").trim();
+    if (!raw) {
+        return true;
+    }
+    const ext = filename.includes(".") ? filename.split(".").pop().toLowerCase() : "";
+    const allowed = raw.split(",").map(v => v.trim().toLowerCase()).filter(Boolean);
+    return ext !== "" && allowed.includes(ext);
+}
+
+function updateTicketComposerUi(textInput, fileInput, rules) {
+    const errEl = document.getElementById('glpi-helpxora-live-errors');
+    const cntEl = document.getElementById('glpi-helpxora-char-count');
+    const text = textInput.value;
+    const len = text.length;
+    const trimmed = text.trim();
+    const descMode = normalizeHelpxoraMode(rules.description_mode, 1);
+    const attachMode = normalizeHelpxoraMode(rules.attachments_mode, 0);
+    const minC = Number(rules.min_chars ?? 0);
+    const maxC = Number(rules.max_chars || 500);
+    const maxF = Math.min(10, Math.max(1, Number(rules.max_files || 1)));
+    const fileCount = helpxoraGetTicketFileQueue().length;
+    const invalidTextMsg = 'El texto no parece válido.';
+    const errs = [];
+
+    if (attachMode === 0 && descMode === 0) {
+        errs.push('Este requerimiento no permite enviar respuesta (configure adjuntos o descripción).');
+    }
+    if (descMode === 1 && trimmed === '') {
+        errs.push('La descripción es obligatoria.');
+    }
+    if (descMode === 0) {
+        if (trimmed !== '' && containsSuspiciousSqlPattern(text)) {
+            errs.push('Patrón no permitido.');
+        }
+    } else {
+        if (len > maxC) {
+            errs.push('Máximo ' + maxC + ' caracteres.');
+        }
+        if (rules.validation_regex && trimmed !== '' && !matchesCustomRegex(trimmed, rules.validation_regex)) {
+            errs.push(invalidTextMsg);
+        }
+        if (Number(rules.restrict_gibberish) === 1 && trimmed !== '' && isLikelyGibberish(text)) {
+            errs.push(invalidTextMsg);
+        }
+        if (trimmed !== '' && containsSuspiciousSqlPattern(text)) {
+            errs.push('Patrón no permitido.');
+        }
+    }
+    const footerStatusParts = [];
+    let hasFooterStatusError = false;
+    if (descMode !== 0 && trimmed !== '' && len < minC) {
+        footerStatusParts.push('Mínimo ' + minC + ' caracteres.');
+        hasFooterStatusError = true;
+    }
+    if (attachMode === 1 && fileCount !== maxF) {
+        footerStatusParts.push('Debe adjuntar exactamente ' + maxF + ' archivo(s).');
+        hasFooterStatusError = true;
+    }
+    const banner = (currentData && currentData.helpxoraAttachmentBanner) ? String(currentData.helpxoraAttachmentBanner).trim() : '';
+    if (banner !== '') {
+        footerStatusParts.push(banner);
+        hasFooterStatusError = true;
+    }
+    const footerStatusEl = document.getElementById('glpi-helpxora-footer-status');
+    if (footerStatusEl) {
+        footerStatusEl.textContent = footerStatusParts.join(' ');
+    }
+
+    if (errEl) {
+        errEl.textContent = errs.join(' ');
+    }
+    if (cntEl) {
+        if (descMode === 0) {
+            cntEl.textContent = '';
+            cntEl.classList.remove('helpxora-char-count--invalid');
+        } else {
+            cntEl.textContent = len + ' / ' + maxC;
+            const badLen = len > maxC || (trimmed !== '' && len < minC) || (descMode === 1 && trimmed === '') ||
+                (rules.validation_regex && trimmed !== '' && !matchesCustomRegex(trimmed, rules.validation_regex)) ||
+                (Number(rules.restrict_gibberish) === 1 && trimmed !== '' && isLikelyGibberish(text));
+            cntEl.classList.toggle('helpxora-char-count--invalid', badLen);
+        }
+    }
+    applyHelpxoraSendButtonState(errs.length > 0 || hasFooterStatusError);
 }
 
 function handleTicketSubmit() {
@@ -300,33 +575,53 @@ function handleTicketSubmit() {
     const fileInput = document.getElementById('glpi-helpxora-file');
     const sendBtn   = document.getElementById('glpi-helpxora-send');
     const text      = input.value.trim();
+    const rawText   = input.value;
 
-    if (!text) return;
+    if (currentData.req_rules) {
+        updateTicketComposerUi(input, fileInput, currentData.req_rules);
+    }
 
-    if (fileInput.files.length > 0) {
-        const file = fileInput.files[0];
+    const liveErrEl = document.getElementById('glpi-helpxora-live-errors');
+    const footerStatEl = document.getElementById('glpi-helpxora-footer-status');
+    if ((liveErrEl && liveErrEl.textContent.trim() !== '') || (footerStatEl && footerStatEl.textContent.trim() !== '')) {
+        return;
+    }
 
-        if (glpiHelpxoraConfig.max_upload_size && file.size > glpiHelpxoraConfig.max_upload_size) {
+    if (!validateTicketPayload(currentData, rawText, fileInput)) {
+        return;
+    }
+
+    const rules = currentData.req_rules || {};
+    const fileQueue = helpxoraGetTicketFileQueue();
+    const nFiles = fileQueue.length;
+    for (let i = 0; i < nFiles; i++) {
+        const f = fileQueue[i];
+        if (glpiHelpxoraConfig.max_upload_size && f.size > glpiHelpxoraConfig.max_upload_size) {
             showBotMessage(`❌ ${glpiHelpxoraConfig.error_msg}`);
             fileInput.value = "";
             const pEl = document.getElementById('glpi-helpxora-file-preview');
-            if (pEl) { pEl.textContent = ''; pEl.style.display = 'none'; }
+            if (pEl && currentData && currentData.req_rules) {
+                currentData.helpxoraFileQueue = [];
+                helpxoraRenderFileQueuePreview(pEl, currentData.req_rules, '');
+            }
             setTimeout(resetFlow, 2000);
             return;
         }
-
-        if (glpiHelpxoraConfig.allowed_extensions) {
+        if (glpiHelpxoraConfig.allowed_extensions && normalizeHelpxoraMode(rules.attachments_mode, 0) === 0) {
             try {
                 let patternStr = glpiHelpxoraConfig.allowed_extensions;
                 if (patternStr.startsWith('/') && patternStr.endsWith('/i')) {
                     patternStr = patternStr.substring(1, patternStr.length - 2);
                 }
                 const regex = new RegExp(patternStr, 'i');
-                if (!regex.test(file.name)) {
+                if (!regex.test(f.name)) {
                     showBotMessage(`❌ ${glpiHelpxoraConfig.error_msg}`);
                     fileInput.value = "";
                     const pEl = document.getElementById('glpi-helpxora-file-preview');
-                    if (pEl) { pEl.textContent = ''; pEl.style.display = 'none'; }
+                    if (pEl && currentData && currentData.req_rules) {
+                        currentData.helpxoraFileQueue = [];
+                        helpxoraRenderFileQueuePreview(pEl, currentData.req_rules, '');
+                    }
                     setTimeout(resetFlow, 2000);
                     return;
                 }
@@ -336,14 +631,21 @@ function handleTicketSubmit() {
         }
     }
 
-    showUserMessage(text);
-    if (fileInput.files.length > 0) {
-        showBotMessage(`📎 Archivo adjunto: <strong>${escapeHtml(fileInput.files[0].name)}</strong>`);
+    showUserMessage(text || '(sin texto)');
+    if (nFiles > 0) {
+        let names = [];
+        for (let j = 0; j < nFiles; j++) {
+            names.push(escapeHtml(fileQueue[j].name));
+        }
+        showBotMessage(`📎 Archivo(s): <strong>${names.join(', ')}</strong>`);
     }
 
     input.value = '';
     const preview = document.getElementById('glpi-helpxora-file-preview');
-    if (preview) { preview.textContent = ''; preview.style.display = 'none'; }
+    if (preview && currentData && currentData.req_rules) {
+        currentData.helpxoraFileQueue = [];
+        helpxoraRenderFileQueuePreview(preview, currentData.req_rules, '');
+    }
     document.getElementById('glpi-helpxora-input-area').style.display = 'none';
 
     sendBtn.disabled = true;
@@ -353,9 +655,9 @@ function handleTicketSubmit() {
     const formData = new FormData();
     formData.append('action', 'create_ticket');
     formData.append('req_id', currentData.req_id);
-    formData.append('description', text);
-    if (fileInput.files.length > 0) {
-        formData.append('file', fileInput.files[0]);
+    formData.append('description', rawText.trim());
+    for (let k = 0; k < nFiles; k++) {
+        formData.append('files[]', fileQueue[k]);
     }
 
     fetch(CFG_GLPI.root_doc + '/plugins/helpxora/ajax/chat.php', { method: 'POST', headers: { 'X-Glpi-Csrf-Token': getAjaxCsrfToken() }, body: formData })
@@ -365,6 +667,7 @@ function handleTicketSubmit() {
             fileInput.value = "";
             sendBtn.disabled = false;
             sendBtn.textContent = glpiHelpxoraConfig.send_button_label || '➢';
+            applyHelpxoraSendButtonState(false);
             if (data.status === 'success') {
                 showBotMessage(`✅ ${glpiHelpxoraConfig.close} <br><small>Ticket ID: <strong>${data.ticket_id}</strong></small>`);
             } else if (data.status === 'error') {
@@ -383,6 +686,7 @@ function handleTicketSubmit() {
             fileInput.value = "";
             sendBtn.disabled = false;
             sendBtn.textContent = glpiHelpxoraConfig.send_button_label || '➢';
+            applyHelpxoraSendButtonState(false);
             showBotMessage("❌ Error de comunicación con el servidor.");
             setTimeout(resetFlow, 3000);
         });
@@ -397,115 +701,263 @@ function escapeHtml(unsafe) {
         .replace(/'/g, "&#039;");
 }
 
-(function () {
-    var HELPXORA_EDITOR_IDS = ['helpxora_welcome_message', 'helpxora_intro_message', 'helpxora_reason_message', 'helpxora_close_message', 'helpxora_req_custom_response_modal', 'helpxora_consulta_answer_modal'];
-
-    function runScriptsInElement(container) {
-        if (!container || !container.querySelector) return;
-        var scripts = container.querySelectorAll('script');
-        for (var i = 0; i < scripts.length; i++) {
-            var s = (scripts[i].textContent || scripts[i].innerText || '').trim();
-            if (s) {
-                if (typeof window.$ !== 'undefined' && window.$.globalEval) {
-                    window.$.globalEval(s);
-                } else {
-                    try { (function () { eval(s); })(); } catch (e) { console.warn('Helpxora script eval:', e); }
-                }
-                scripts[i].parentNode && scripts[i].parentNode.removeChild(scripts[i]);
-            }
-        }
-    }
-
-    function runWhenTinyMCEReady(container, maxWaitMs) {
-        maxWaitMs = maxWaitMs || 8000;
-        var start = Date.now();
-        function tryRun() {
-            if (typeof window.tinyMCE !== 'undefined') {
-                runScriptsInElement(container);
-                return;
-            }
-            if (Date.now() - start < maxWaitMs) {
-                setTimeout(tryRun, 120);
-            }
-        }
-        tryRun();
-    }
-
-    function containerHasHelpxoraEditors(container) {
-        if (!container || !container.querySelector) return false;
-        for (var i = 0; i < HELPXORA_EDITOR_IDS.length; i++) {
-            if (container.querySelector('#' + HELPXORA_EDITOR_IDS[i])) return true;
-        }
+function validateTicketPayload(data, rawText, fileInput) {
+    if (!data || !Number.isInteger(Number(data.req_id)) || Number(data.req_id) <= 0) {
+        showBotMessage("❌ El tipo de requerimiento seleccionado no es válido.");
+        setTimeout(resetFlow, 2000);
         return false;
     }
+    const rules = (data && data.req_rules) ? data.req_rules : {};
+    const text = (rawText || "").trim();
+    const len = (rawText || "").length;
+    const descMode = normalizeHelpxoraMode(rules.description_mode, 1);
+    const attachMode = normalizeHelpxoraMode(rules.attachments_mode, 0);
+    const minChars = Number(rules.min_chars ?? 0);
+    const maxChars = Number(rules.max_chars || 500);
+    const maxF = Math.min(10, Math.max(1, Number(rules.max_files || 1)));
 
-    function initHelpxoraConfigEditors(container) {
-        container = container || document;
-        if (!containerHasHelpxoraEditors(container)) return;
-        runWhenTinyMCEReady(container);
+    if (descMode === 1 && text === '') {
+        showBotMessage("❌ La descripción es obligatoria para este requerimiento.");
+        return false;
     }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function () {
-            if (document.querySelector('main')) {
-                document.querySelector('main').addEventListener('glpi.tab.loaded', function () {
-                    var active = document.querySelector('main .tab-content .tab-pane.active');
-                    if (active) runWhenTinyMCEReady(active);
-                });
-            }
-            var main = document.querySelector('main');
-            if (main && typeof MutationObserver !== 'undefined') {
-                var observer = new MutationObserver(function (mutations) {
-                    for (var m = 0; m < mutations.length; m++) {
-                        var nodes = mutations[m].addedNodes;
-                        for (var n = 0; n < nodes.length; n++) {
-                            var node = nodes[n];
-                            if (node.nodeType === 1) {
-                                if (containerHasHelpxoraEditors(node)) {
-                                    runWhenTinyMCEReady(node);
-                                    return;
-                                }
-                                if (node.querySelector && containerHasHelpxoraEditors(node)) {
-                                    runWhenTinyMCEReady(node);
-                                    return;
-                                }
-                            }
-                        }
-                    }
-                });
-                observer.observe(main, { childList: true, subtree: true });
-            }
-            setTimeout(function () { initHelpxoraConfigEditors(document.body); }, 300);
-        });
+    if (descMode === 0) {
+        if (text !== '' && containsSuspiciousSqlPattern(text)) {
+            showBotMessage("❌ El texto contiene un patrón no permitido.");
+            return false;
+        }
     } else {
-        if (document.querySelector('main')) {
-            document.querySelector('main').addEventListener('glpi.tab.loaded', function () {
-                var active = document.querySelector('main .tab-content .tab-pane.active');
-                if (active) runWhenTinyMCEReady(active);
-            });
+        if (text !== '' && len < minChars) {
+            showBotMessage(`❌ La descripción debe tener al menos ${minChars} caracteres.`);
+            return false;
         }
-        var main = document.querySelector('main');
-        if (main && typeof MutationObserver !== 'undefined') {
-            var observer = new MutationObserver(function (mutations) {
-                for (var m = 0; m < mutations.length; m++) {
-                    var nodes = mutations[m].addedNodes;
-                    for (var n = 0; n < nodes.length; n++) {
-                        var node = nodes[n];
-                        if (node.nodeType === 1) {
-                            if (containerHasHelpxoraEditors(node)) {
-                                runWhenTinyMCEReady(node);
-                                return;
-                            }
-                            if (node.querySelector && containerHasHelpxoraEditors(node)) {
-                                runWhenTinyMCEReady(node);
-                                return;
-                            }
-                        }
-                    }
-                }
-            });
-            observer.observe(main, { childList: true, subtree: true });
+        if (len > maxChars) {
+            showBotMessage(`❌ La descripción excede el máximo permitido (${maxChars} caracteres).`);
+            return false;
         }
-        setTimeout(function () { initHelpxoraConfigEditors(document.body); }, 300);
+        if (rules.validation_regex && text !== '' && !matchesCustomRegex(text, rules.validation_regex)) {
+            showBotMessage("❌ El texto no parece válido.");
+            return false;
+        }
+        if (Number(rules.restrict_gibberish || 0) === 1 && text !== '' && isLikelyGibberish(text)) {
+            showBotMessage("❌ El texto no parece válido.");
+            return false;
+        }
+        if (text !== '' && containsSuspiciousSqlPattern(text)) {
+            showBotMessage("❌ El texto contiene un patrón no permitido.");
+            return false;
+        }
     }
-})();
+
+    const queue = (data && Array.isArray(data.helpxoraFileQueue)) ? data.helpxoraFileQueue : [];
+    const n = queue.length;
+
+    if (n > 0 && attachMode === 0) {
+        showBotMessage("❌ Este requerimiento no permite adjuntar archivos.");
+        return false;
+    }
+    if ((attachMode === 1 || attachMode === 2) && n > maxF) {
+        showBotMessage(`❌ Demasiados archivos (máximo ${maxF}).`);
+        return false;
+    }
+    if (attachMode === 1 && n !== maxF) {
+        showBotMessage(`❌ Debe adjuntar exactamente ${maxF} archivo(s).`);
+        return false;
+    }
+    for (let i = 0; i < n; i++) {
+        if (rules.allowed_extensions && !isAllowedExtension(queue[i].name, rules.allowed_extensions)) {
+            showBotMessage("❌ La extensión del archivo no está permitida para este requerimiento.");
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function matchesCustomRegex(text, regexPattern) {
+    const pattern = (regexPattern || "").trim();
+    if (!pattern) {
+        return true;
+    }
+    try {
+        let regex;
+        if (pattern.startsWith("/") && pattern.lastIndexOf("/") > 0) {
+            const lastSlash = pattern.lastIndexOf("/");
+            const body = pattern.slice(1, lastSlash);
+            const flags = pattern.slice(lastSlash + 1);
+            regex = new RegExp(body, flags);
+        } else {
+            regex = new RegExp(pattern);
+        }
+        return regex.test(text);
+    } catch (e) {
+        return true;
+    }
+}
+
+function isLikelyGibberish(text) {
+    const t = (text || "").trim();
+    if (t === "") {
+        return false;
+    }
+    const letters = t.replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ]/g, "");
+    if (letters.length < 4) {
+        return false;
+    }
+    const words = t.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+    if (words.length < 2) {
+        return true;
+    }
+    if (/asdf|qwer|zxcv|1234/i.test(t)) {
+        return true;
+    }
+    if (/(.)\1{4,}/u.test(t)) {
+        return true;
+    }
+    if (!/[aeiouáéíóúü]/i.test(letters)) {
+        return true;
+    }
+    return false;
+}
+
+function isAllowedExtension(filename, allowedExtensions) {
+    const raw = String(allowedExtensions || "").trim();
+    if (!raw) {
+        return true;
+    }
+    const fileExt = filename.includes(".") ? filename.split(".").pop().toLowerCase() : "";
+    if (!fileExt) {
+        return false;
+    }
+    const allowed = raw.split(",").map(v => v.trim().toLowerCase()).filter(Boolean);
+    return allowed.includes(fileExt);
+}
+
+function containsSuspiciousSqlPattern(text) {
+    if (!text || typeof text !== "string") {
+        return false;
+    }
+    const patterns = [
+        /\bunion\b\s+\bselect\b/i,
+        /\bselect\b.+\bfrom\b/i,
+        /\binsert\b\s+\binto\b/i,
+        /\bupdate\b.+\bset\b/i,
+        /\bdelete\b\s+\bfrom\b/i,
+        /\bdrop\b\s+\btable\b/i,
+        /\btruncate\b\s+\btable\b/i,
+        /\bor\b\s+1\s*=\s*1\b/i,
+        /--/,
+        /\/\*/,
+        /;\s*(select|insert|update|delete|drop|truncate)\b/i
+    ];
+    for (const pattern of patterns) {
+        if (pattern.test(text)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function sanitizeImageUrl(url) {
+    if (!url || typeof url !== "string") {
+        return "";
+    }
+    const trimmed = url.trim();
+    if (!trimmed) {
+        return "";
+    }
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("/") || trimmed.startsWith("./") || trimmed.startsWith("../")) {
+        return trimmed;
+    }
+    return "";
+}
+
+function openImageZoom(url) {
+    closeImageZoom();
+    const overlay = document.createElement("div");
+    overlay.id = "glpi-helpxora-image-modal";
+    overlay.innerHTML = `
+        <div class="helpxora-image-modal-backdrop"></div>
+        <button type="button" class="helpxora-image-modal-close" aria-label="Cerrar zoom">✕</button>
+        <img src="${url}" alt="Imagen ampliada" class="helpxora-image-modal-content">
+    `;
+    overlay.addEventListener("click", function (e) {
+        if (e.target === overlay || e.target.classList.contains("helpxora-image-modal-backdrop")) {
+            closeImageZoom();
+        }
+    });
+    const closeBtn = overlay.querySelector(".helpxora-image-modal-close");
+    if (closeBtn) {
+        closeBtn.addEventListener("click", closeImageZoom);
+    }
+    document.addEventListener("keydown", handleImageZoomEscape);
+    document.body.appendChild(overlay);
+    activeZoomModal = overlay;
+}
+
+function closeImageZoom() {
+    if (activeZoomModal && activeZoomModal.parentNode) {
+        activeZoomModal.parentNode.removeChild(activeZoomModal);
+    }
+    activeZoomModal = null;
+    document.removeEventListener("keydown", handleImageZoomEscape);
+}
+
+function handleImageZoomEscape(event) {
+    if (event.key === "Escape") {
+        closeImageZoom();
+    }
+}
+
+function resetComposerState() {
+    const inputArea = document.getElementById('glpi-helpxora-input-area');
+    if (inputArea) {
+        inputArea.style.display = 'none';
+    }
+    const input = document.getElementById('glpi-helpxora-text');
+    if (input) {
+        input.value = '';
+    }
+    const fileInput = document.getElementById('glpi-helpxora-file');
+    if (fileInput) {
+        fileInput.value = '';
+    }
+    const preview = document.getElementById('glpi-helpxora-file-preview');
+    if (preview) {
+        preview.textContent = '';
+        preview.style.display = 'none';
+    }
+    const errEl = document.getElementById('glpi-helpxora-live-errors');
+    if (errEl) {
+        errEl.textContent = '';
+    }
+    const footerStat = document.getElementById('glpi-helpxora-footer-status');
+    if (footerStat) {
+        footerStat.textContent = '';
+    }
+    const cntEl = document.getElementById('glpi-helpxora-char-count');
+    if (cntEl) {
+        cntEl.textContent = '';
+        cntEl.classList.remove('helpxora-char-count--invalid');
+    }
+    const sendBtn = document.getElementById('glpi-helpxora-send');
+    if (sendBtn) {
+        sendBtn.disabled = false;
+        sendBtn.textContent = glpiHelpxoraConfig.send_button_label || '➢';
+    }
+    if (typeof currentData !== 'undefined' && currentData) {
+        currentData.helpxoraFileQueue = [];
+        currentData.helpxoraAttachmentBanner = '';
+    }
+}
+
+function resetChatSession() {
+    const messagesDiv = document.getElementById('glpi-helpxora-messages');
+    if (messagesDiv) {
+        messagesDiv.innerHTML = '';
+    }
+    removeTypingIndicator();
+    closeImageZoom();
+    resetComposerState();
+    currentFlow = null;
+    currentData = {};
+}
